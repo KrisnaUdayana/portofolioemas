@@ -5,13 +5,25 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\GoldTransaction;
 use App\Models\GoldPrice;
+use App\Services\GoldPriceService;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Data dummy untuk sekarang (nanti diganti dengan real data)
-        $latestGoldPrice = GoldPrice::latest()->first();
+        // Cek apakah ada harga hari ini, jika tidak fetch yang baru
+        $latestGoldPrice = GoldPrice::whereDate('date', today())->first();
+
+        if (!$latestGoldPrice) {
+            $goldService = new GoldPriceService();
+            $latestGoldPrice = $goldService->fetchLatestPrice();
+        }
+
+        // Fallback ke harga terakhir jika masih null
+        if (!$latestGoldPrice) {
+            $latestGoldPrice = GoldPrice::latest()->first();
+        }
+
         $transactions = GoldTransaction::all();
 
         // Hitung total investasi

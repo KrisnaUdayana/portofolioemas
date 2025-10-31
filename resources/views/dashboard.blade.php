@@ -64,10 +64,10 @@
                 class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg text-center font-semibold transition duration-200">
                 📈 Lihat Harga Emas
             </a>
-            <button onclick="alert('Fitur coming soon!')"
+            <a href="{{ route('transactions.create') }}"
                 class="bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg text-center font-semibold transition duration-200">
                 ➕ Tambah Transaksi
-            </button>
+            </a>
         </div>
     </div>
 @endsection

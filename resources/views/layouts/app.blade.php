@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') - Gold Portfolio</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+
 <body class="bg-gray-50">
     <!-- Navigation -->
     <nav class="bg-white shadow-lg">
@@ -15,9 +17,15 @@
                     <span class="text-gold-dark font-bold text-xl">🏦 GoldPortfolio</span>
                 </div>
                 <div class="flex space-x-4">
-                    <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-gold-dark">Dashboard</a>
-                    <a href="{{ route('gold.prices') }}" class="text-gray-700 hover:text-gold-dark">Harga Emas</a>
-                    <a href="{{ route('calculator') }}" class="text-gray-700 hover:text-gold-dark">Kalkulator</a>
+                    <a href="{{ route('dashboard') }}"
+                        class="text-gray-700 hover:text-gold-dark {{ request()->routeIs('dashboard') ? 'font-bold text-gold-dark' : '' }}">Dashboard</a>
+                    <a href="{{ route('transactions.index') }}"
+                        class="text-gray-700 hover:text-gold-dark {{ request()->routeIs('transactions.*') ? 'font-bold text-gold-dark' : '' }}">Transaksi</a>
+                    <a href="{{ route('gold.prices') }}"
+                        class="text-gray-700 hover:text-gold-dark {{ request()->routeIs('gold.prices') ? 'font-bold text-gold-dark' : '' }}">Harga
+                        Emas</a>
+                    <a href="{{ route('calculator') }}"
+                        class="text-gray-700 hover:text-gold-dark {{ request()->routeIs('calculator') ? 'font-bold text-gold-dark' : '' }}">Kalkulator</a>
                 </div>
             </div>
         </div>
@@ -35,4 +43,5 @@
         </div>
     </footer>
 </body>
+
 </html>
