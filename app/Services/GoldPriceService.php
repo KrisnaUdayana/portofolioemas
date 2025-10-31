@@ -8,60 +8,81 @@ use App\Models\GoldPrice;
 
 class GoldPriceService
 {
+    private $apiKey;
+    private $baseUrl = 'https://api.metalpriceapi.com/v1/';
+
+    public function __construct()
+    {
+        $this->apiKey = env('METALPRICE_API_KEY');
+    }
+
     public function fetchLatestPrice()
     {
         try {
-            // Opsi 1: Mock API (sementara untuk development)
-            $mockPrice = $this->getMockGoldPrice();
+            // Cek apakah sudah ada harga untuk hari ini
+            $todayPrice = GoldPrice::whereDate('date', today())->first();
+            if ($todayPrice) {
+                return $todayPrice; // Sudah ada, tidak perlu fetch lagi
+            }
 
-            // Simpan ke database
-            $goldPrice = GoldPrice::create([
-                'price_per_gram' => $mockPrice,
-                'source' => 'logam-mulia',
-                'date' => now()->toDateString()
-            ]);
+            // Fetch dari API real
+            $realPrice = $this->fetchFromRealAPI();
 
-            return $goldPrice;
+            if ($realPrice) {
+                return $this->saveGoldPrice($realPrice, 'metalpriceapi');
+            }
+
+            // Fallback ke mock data
+            $mockPrice = $this->getRealisticMockPrice();
+            return $this->saveGoldPrice($mockPrice, 'mock-fallback');
         } catch (\Exception $e) {
             Log::error('Error fetching gold price: ' . $e->getMessage());
             return null;
         }
     }
 
-    private function getMockGoldPrice()
-    {
-        // Simulasi fluktuasi harga emas real
-        $basePrice = 975000; // Harga dasar
-        $randomChange = rand(-5000, 10000); // Perubahan acak -5k sampai +10k
-        return $basePrice + $randomChange;
-    }
-
-    // Method untuk API real (nanti diimplementasi)
     private function fetchFromRealAPI()
     {
-        // Contoh dengan API gratis (butuh registrasi dulu)
-        /*
-        $response = Http::get('https://api.metalpriceapi.com/v1/latest', [
-            'api_key' => 'your_api_key',
+        if (!$this->apiKey || $this->apiKey === 'your_actual_api_key_here') {
+            Log::warning('MetalPrice API key not set or still default');
+            return null;
+        }
+
+        $response = Http::timeout(10)->get($this->baseUrl . 'latest', [
+            'api_key' => $this->apiKey,
             'base' => 'XAU',
             'currencies' => 'IDR'
         ]);
 
         if ($response->successful()) {
             $data = $response->json();
-            // Convert dari USD/Ounce ke IDR/gram
-            return $this->convertToIDRPerGram($data['rates']['IDR']);
-        }
-        */
 
-        return null;
+            // Convert dari USD/Ounce ke IDR/gram
+            $idrPerOunce = $data['rates']['IDR'];
+            $idrPerGram = $idrPerOunce / 31.1035;
+
+            Log::info('Gold price fetched from API: Rp ' . number_format($idrPerGram, 0));
+            return $idrPerGram;
+        } else {
+            Log::error('API request failed: ' . $response->body());
+            return null;
+        }
     }
 
-    private function convertToIDRPerGram($usdPerOunce)
+    private function getRealisticMockPrice()
     {
-        // 1 ounce = 31.1035 gram
-        // Konversi USD to IDR (butuh API terpisah)
-        $usdToIdr = 15000; // Rate dummy
-        return ($usdPerOunce * $usdToIdr) / 31.1035;
+        // Harga realistis berdasarkan trend
+        $basePrice = 975000;
+        $randomChange = rand(-5000, 8000);
+        return max($basePrice + $randomChange, 920000);
+    }
+
+    private function saveGoldPrice($price, $source)
+    {
+        return GoldPrice::create([
+            'price_per_gram' => $price,
+            'source' => $source,
+            'date' => today()
+        ]);
     }
 }

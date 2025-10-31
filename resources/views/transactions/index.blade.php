@@ -34,6 +34,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Berat</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga/Gram</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keuntungan</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catatan</th>
                         </tr>
                     </thead>
@@ -65,6 +66,28 @@
                                 <td class="px-6 py-4 whitespace-nowrap font-semibold">
                                     Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if ($transaction->isBuy())
+                                        @php
+                                            $profit = $transaction->profit ?? 0;
+                                            $percentage = $transaction->profit_percentage ?? 0;
+                                        @endphp
+                                        <div class="text-right">
+                                            <div
+                                                class="font-semibold {{ $profit >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                {{ $profit >= 0 ? '+' : '' }}Rp {{ number_format($profit, 0, ',', '.') }}
+                                            </div>
+                                            <div class="text-xs {{ $percentage >= 0 ? 'text-green-500' : 'text-red-500' }}">
+                                                {{ $percentage >= 0 ? '+' : '' }}{{ number_format($percentage) }}%
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="text-right text-gray-400">
+                                            <div>-</div>
+                                            <div class="text-xs">-</div>
+                                        </div>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 text-gray-600">
                                     {{ $transaction->notes ?? '-' }}
                                 </td>
@@ -72,6 +95,39 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="p-6 border-t bg-gray-50">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                    @php
+                        $buyTransactions = $transactions->where('type', 'buy');
+                        $totalInvestment = $buyTransactions->sum('total_amount');
+                        $totalGrams = $buyTransactions->sum('grams');
+                        $totalProfit = $buyTransactions->sum('profit');
+                        $averageROI = $totalInvestment > 0 ? ($totalProfit / $totalInvestment) * 100 : 0;
+                    @endphp
+                    <div class="text-center p-3 bg-white rounded-lg border">
+                        <div class="text-gray-600">Total Investasi</div>
+                        <div class="font-bold text-lg">Rp {{ number_format($totalInvestment, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="text-center p-3 bg-white rounded-lg border">
+                        <div class="text-gray-600">Total Emas</div>
+                        <div class="font-bold text-lg">{{ number_format($totalGrams) }} gram</div>
+                    </div>
+                    <div class="text-center p-3 bg-white rounded-lg border">
+                        <div class="text-gray-600">Total Keuntungan</div>
+                        <div class="font-bold text-lg {{ $totalProfit >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                            {{ $totalProfit >= 0 ? '+' : '' }}Rp {{ number_format($totalProfit, 0, ',', '.') }}
+                        </div>
+                    </div>
+                    <div class="text-center p-3 bg-white rounded-lg border">
+                        <div class="text-gray-600">ROI Rata-rata</div>
+                        <div class="font-bold text-lg {{ $averageROI >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                            {{ $averageROI >= 0 ? '+' : '' }}{{ number_format($averageROI) }}%
+                        </div>
+                    </div>
+                </div>
             </div>
         @else
             <div class="p-8 text-center">

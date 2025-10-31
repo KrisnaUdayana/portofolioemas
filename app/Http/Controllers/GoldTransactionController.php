@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\GoldTransaction;
+use App\Models\GoldPrice;
+use App\Services\GoldPriceService;
+
 
 class GoldTransactionController extends Controller
 {
@@ -38,9 +41,36 @@ class GoldTransactionController extends Controller
     {
         $transactions = GoldTransaction::orderBy('transaction_date', 'desc')->get();
 
+        // SOLUSI: Always fetch fresh price from API
+        $goldService = new GoldPriceService();
+        $latestGoldPrice = $goldService->fetchLatestPrice();
+
+        if ($latestGoldPrice) {
+            $currentPricePerGram = $latestGoldPrice->price_per_gram;
+            \Log::info("Fresh price from API: " . $currentPricePerGram);
+        } else {
+            // Fallback ke harga realistic
+            $currentPricePerGram = 2107970;
+            \Log::info("Using fallback price: " . $currentPricePerGram);
+        }
+
+        // Hitung profit
+        $transactions->each(function ($transaction) use ($currentPricePerGram) {
+            if ($transaction->isBuy()) {
+                $currentValue = $transaction->grams * $currentPricePerGram;
+                $transaction->profit = $currentValue - $transaction->total_amount;
+                $transaction->profit_percentage = $transaction->total_amount > 0
+                    ? ($transaction->profit / $transaction->total_amount) * 100
+                    : 0;
+
+                \Log::info("Transaction " . $transaction->id . " profit: " . $transaction->profit);
+            }
+        });
+
         return view('transactions.index', [
-            'title' => 'Riwayat Transaksi Emas',
-            'transactions' => $transactions
+            'transactions' => $transactions,
+            'currentPricePerGram' => $currentPricePerGram,
+            'buyTransactions' => $transactions->where('type', 'buy')
         ]);
     }
 }

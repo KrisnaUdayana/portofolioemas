@@ -3,6 +3,8 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GoldTransactionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GoldPriceController;
+use App\Http\Controllers\GoldExportController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -16,9 +18,9 @@ Route::get('/transactions/create', [GoldTransactionController::class, 'create'])
 Route::post('/transactions', [GoldTransactionController::class, 'store'])->name('transactions.store');
 
 // Other routes...
-Route::get('/gold-prices', function () {
-    return view('gold-prices', ['title' => 'Harga Emas']);
-})->name('gold.prices');
+Route::get('/gold-prices', [GoldPriceController::class, 'index'])->name('gold.prices');
+Route::post('/gold-prices/update', [GoldPriceController::class, 'updateManual'])->name('gold.update-manual');
+Route::get('/gold-prices/export', [GoldExportController::class, 'exportPDF'])->name('gold.export.pdf');
 
 Route::get('/calculator', function () {
     return view('calculator', ['title' => 'Kalkulator Emas']);

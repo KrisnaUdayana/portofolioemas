@@ -14,7 +14,7 @@
         <!-- Card: Jumlah Emas -->
         <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
             <h3 class="text-lg font-semibold text-gray-700">Total Emas</h3>
-            <p class="text-2xl font-bold text-blue-600 mt-2">{{ number_format($totalGrams, 2) }} gram</p>
+            <p class="text-2xl font-bold text-blue-600 mt-2">{{ number_format($totalGrams) }} gram</p>
             <p class="text-sm text-gray-500">
                 @if ($latestGoldPrice)
                     Rp {{ number_format($latestGoldPrice->price_per_gram, 0, ',', '.') }}/gram
