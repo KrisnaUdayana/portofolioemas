@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
+use App\Services\GoldPriceService;
 
 class Kernel extends Command
 {
@@ -31,10 +32,10 @@ class Kernel extends Command
 
     protected function schedule(Schedule $schedule)
     {
-        // Update harga emas setiap hari jam 9 pagi
-        $schedule->command('gold:update-price')->dailyAt('09:00');
-
-        // Untuk testing, bisa jadwal lebih sering
-        // $schedule->command('gold:update-price')->hourly();
+        // Auto-update harga emas setiap hari jam 9 pagi
+        $schedule->call(function () {
+            $goldService = new GoldPriceService();
+            $goldService->fetchLatestPrice();
+        })->dailyAt('09:00');
     }
 }

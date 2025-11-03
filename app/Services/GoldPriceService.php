@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\GoldPrice;
+use Carbon\Carbon;
 
 class GoldPriceService
 {
@@ -21,20 +22,26 @@ class GoldPriceService
         try {
             // Cek apakah sudah ada harga untuk hari ini
             $todayPrice = GoldPrice::whereDate('date', today())->first();
+
             if ($todayPrice) {
-                return $todayPrice; // Sudah ada, tidak perlu fetch lagi
+                Log::info('Harga hari ini sudah ada: Rp ' . number_format($todayPrice->price_per_gram, 0));
+                return $todayPrice;
             }
 
-            // Fetch dari API real
+            Log::info('Fetching harga baru dari API...');
+
+            // Fetch dari API real saja - TIDAK ADA FALLBACK MOCK
             $realPrice = $this->fetchFromRealAPI();
 
             if ($realPrice) {
-                return $this->saveGoldPrice($realPrice, 'metalpriceapi');
+                $savedPrice = $this->saveGoldPrice($realPrice, 'metalpriceapi');
+                Log::info('Harga API real disimpan: Rp ' . number_format($savedPrice->price_per_gram, 0));
+                return $savedPrice;
             }
 
-            // Fallback ke mock data
-            $mockPrice = $this->getRealisticMockPrice();
-            return $this->saveGoldPrice($mockPrice, 'mock-fallback');
+            // ❌ TIDAK ADA FALLBACK KE MOCK DATA
+            Log::warning('API gagal, return null');
+            return null;
         } catch (\Exception $e) {
             Log::error('Error fetching gold price: ' . $e->getMessage());
             return null;
@@ -69,20 +76,23 @@ class GoldPriceService
         }
     }
 
-    private function getRealisticMockPrice()
-    {
-        // Harga realistis berdasarkan trend
-        $basePrice = 975000;
-        $randomChange = rand(-5000, 8000);
-        return max($basePrice + $randomChange, 920000);
-    }
-
     private function saveGoldPrice($price, $source)
     {
+        // Hanya simpan jika dari API real atau manual
         return GoldPrice::create([
             'price_per_gram' => $price,
             'source' => $source,
             'date' => today()
         ]);
+    }
+
+    // Method untuk lihat riwayat harga REAL saja
+    public function getPriceHistory($days = 30)
+    {
+        return GoldPrice::whereDate('date', '>=', now()->subDays($days))
+            ->where('source', '!=', 'historical-mock') // ❌ EXCLUDE MOCK DATA
+            ->where('source', '!=', 'mock-fallback')   // ❌ EXCLUDE MOCK DATA
+            ->orderBy('date', 'desc')
+            ->get();
     }
 }

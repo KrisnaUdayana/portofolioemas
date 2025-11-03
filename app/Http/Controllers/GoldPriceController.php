@@ -8,20 +8,20 @@ use App\Services\GoldPriceService;
 
 class GoldPriceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Hanya ambil harga terbaru saja
-        $latestGoldPrice = GoldPrice::latest()->first();
+        $goldService = new GoldPriceService();
 
-        // Auto-fetch jika belum ada harga hari ini
-        if (!$latestGoldPrice || $latestGoldPrice->date->notEqualTo(today())) {
-            $goldService = new GoldPriceService();
-            $latestGoldPrice = $goldService->fetchLatestPrice();
-        }
+        // Auto-fetch harga hari ini jika belum ada
+        $latestGoldPrice = $goldService->fetchLatestPrice();
+
+        // Ambil riwayat harga 30 hari terakhir
+        $priceHistory = $goldService->getPriceHistory(30);
 
         return view('gold-prices', [
-            'title' => 'Harga Emas',
-            'latestGoldPrice' => $latestGoldPrice
+            'title' => 'Harga Emas Terkini & Riwayat',
+            'latestGoldPrice' => $latestGoldPrice,
+            'priceHistory' => $priceHistory
         ]);
     }
 
@@ -32,7 +32,7 @@ class GoldPriceController extends Controller
         ]);
 
         $goldPrice = GoldPrice::updateOrCreate(
-            ['date' => today()],
+            ['date' => today()], // SELALU untuk hari ini
             [
                 'price_per_gram' => $request->manual_price,
                 'source' => 'manual'
